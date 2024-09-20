@@ -244,7 +244,7 @@ class SlashesCommands(commands.Cog):
 
             await inter.edit_original_response(
                 view=view,
-                embed=await make_word_card(username, words[current])
+                embed=await make_word_card(username, words[current-1])
             )
         
         async def on_timeout():
