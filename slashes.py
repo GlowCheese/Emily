@@ -66,15 +66,113 @@ class SlashesCommands(commands.Cog):
         await inter.response.defer()
 
         username = inter.author.name
-        w = Word(word, source, meaning, None)
+        w = Word(word, source, meaning)
 
-        if database.add_word(username, w):
-            desc = "✅ Successfully added `1` new word to dictionary!"
-            embed = disnake.Embed(description=desc, color=SUCCESS)
-            await inter.send(embeds=[embed, make_word_card(username, word)])
-        else:
+        if database.fetch_word(username, word):
             desc = "⭕ This word has already been added to dictionary!"
             await inter.send(embed=disnake.Embed(description=desc, color=NEUTRAL))
+        else:
+            imgs1 = get_google_images(word)
+            imgs2 = get_google_images(meaning)
+            interleaved = [item for pair in zip(imgs1, imgs2) for item in pair]
+
+            embed = disnake.Embed(
+                description="Does this image best describe your word?",
+                color=random.choice(COLORS),
+            )
+            embed.set_footer(text="Image 1/10")
+            await inter.send(embed=embed.set_image(interleaved[0]))
+
+            current = 1
+            yes = disnake.ui.Button(
+                emoji="✅",
+                style=disnake.ButtonStyle.green
+            )
+            prev = disnake.ui.Button(
+                emoji="⬅",
+                style=disnake.ButtonStyle.gray
+            )
+            next = disnake.ui.Button(
+                emoji="➡",
+                style=disnake.ButtonStyle.gray
+            )
+            skip = disnake.ui.Button(
+                label="Skip",
+                style=disnake.ButtonStyle.blurple
+            )
+            view = disnake.ui.View()
+
+            async def finish():
+                database.add_word(username, w)
+                desc = "✅ Successfully added `1` new word to dictionary!"
+                embed = disnake.Embed(description=desc, color=SUCCESS)
+                await inter.edit_original_response(
+                    view=None,
+                    embeds=[embed, make_word_card(username, word)]
+                )
+
+            async def yes_callback(new_inter: disnake.MessageInteraction):
+                await new_inter.response.defer()
+                w.thumbnail = interleaved[current-1]
+                await finish()
+
+            async def skip_callback(new_inter: disnake.MessageInteraction):
+                await new_inter.response.defer()
+                await finish()
+
+            async def prev_callback(new_inter: disnake.MessageInteraction):
+                await new_inter.response.defer()
+                nonlocal current
+                current -= 1
+                next.disabled = False
+                
+                if current == 1:
+                    prev.disabled = True
+                    view.clear_items().add_item(yes)
+                    view.add_item(prev).add_item(next)
+                    view.add_item(skip)
+
+                embed.set_footer(text=f"Image {current}/10")
+                await inter.edit_original_response(
+                    view=view,
+                    embed=embed.set_image(interleaved[current-1])
+                )
+
+            async def next_callback(new_inter: disnake.MessageInteraction):
+                await new_inter.response.defer()
+                nonlocal current
+                current += 1
+                prev.disabled = False
+                
+                if current == len(interleaved):
+                    next.disabled = True
+                    view.clear_items().add_item(yes)
+                    view.add_item(prev).add_item(next)
+                    view.add_item(skip)
+
+                embed.set_footer(text=f"Image {current}/10")
+                await inter.edit_original_response(
+                    view=view,
+                    embed=embed.set_image(interleaved[current-1])
+                )
+
+            async def on_timeout():
+                desc = "⭕ No word has been added as user took too long to respond."
+                await inter.edit_original_response(
+                    view=None,
+                    embed=disnake.Embed(description=desc, color=ALERT)
+                )
+
+            yes.callback = yes_callback
+            prev.callback = prev_callback
+            next.callback = next_callback
+            skip.callback = skip_callback
+            view.on_timeout = on_timeout
+
+            prev.disabled = True
+            view.add_item(yes).add_item(prev)
+            view.add_item(next).add_item(skip)
+            await inter.edit_original_response(view=view)
 
 
     @remove.sub_command()
@@ -123,11 +221,11 @@ class SlashesCommands(commands.Cog):
             embed = disnake.Embed(description=desc, color=random.choice(COLORS))
             field1, field2, field3 = "", "", ""
             for i in range((len(words)+2)//3):
-                field1 += f"{i+1}. {words[i]}"
+                field1 += f"\n{i+1}. {words[i]}"
             for i in range((len(words)+2)//3, len(words) - len(words)//3):
-                field2 += f"{i+1}. {words[i]}"
+                field2 += f"\n{i+1}. {words[i]}"
             for i in range(len(words) - len(words)//3, len(words)):
-                field3 += f"{i+1}. {words[i]}"
+                field3 += f"\n{i+1}. {words[i]}"
 
             embed.add_field(" ", field1)
             if field2 != "": embed.add_field(" ", field2)
@@ -225,7 +323,7 @@ class SlashesCommands(commands.Cog):
         next_button = disnake.ui.Button(
             label=f"Next (1/{total})",
             style=disnake.ButtonStyle.green,
-            emoji="➡️"
+            emoji="➡️right"
         )
         view = disnake.ui.View()
 

@@ -17,13 +17,26 @@ class Word:
         source: str,
         meanings: str,
         synonyms: str = None,
-        time_added: int = None
+        time_added: int = None,
+        thumbnail: str = None
     ):
         self.word = word
         self.source = source
         self.meanings = meanings.split(";")
         self.synonyms = synonyms.split(";") if synonyms else []
         self.time_added = time_added if time_added else int(time.time())
+        self.thumbnail = thumbnail
+
+    @staticmethod
+    def from_dict(d: dict):
+        return Word(
+            word=d['word'],
+            source=d['source'],
+            meanings=d['meanings'],
+            synonyms=d['synonyms'],
+            time_added=d['time_added'],
+            thumbnail=d['thumbnail']
+        )
 
 
 def create_table(username: str):
@@ -33,7 +46,8 @@ def create_table(username: str):
             source       TEXT,
             meanings     TEXT,
             synonyms     TEXT,
-            time_added   TEXT
+            time_added   TEXT,
+            thumbnail    TEXT
         )
     """)
 
@@ -57,10 +71,10 @@ def add_word(username: str, word: Word):
     try:
         conn.execute(f"""
             INSERT INTO "{username}"
-            VALUES (?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?)
         """, (
-            word.word, word.source,
-            word.meanings[0], None, word.time_added
+            word.word, word.source, word.meanings[0],
+            None, word.time_added, word.thumbnail
         ))
 
         return True
@@ -97,13 +111,7 @@ def fetch_word(username: str, word: str):
 
     res = dict(res)
 
-    return Word(
-        word=word,
-        source=res['source'],
-        meanings=res['meanings'],
-        synonyms=res['synonyms'],
-        time_added=res['time_added']
-    )
+    return Word.from_dict(res)
 
 
 @make_sure_table_exist
@@ -160,10 +168,4 @@ def list_words(username: str, source: str = None):
             ORDER BY time_added DESC
         """, (source,))
 
-    return [Word(
-        word=res['word'],
-        source=res['source'],
-        meanings=res['meanings'],
-        synonyms=res['synonyms'],
-        time_added=res['time_added']
-    ) for res in cursor.fetchall()]
+    return [Word.from_dict(res) for res in cursor.fetchall()]
