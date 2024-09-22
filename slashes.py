@@ -3,6 +3,15 @@ from utils import *
 from constants import *
 from database import Word
 
+
+sources_cache = LazyDict(database.list_sources)
+
+def autocomp_sources(inter: SlashInteraction, user_input: str):
+    text = user_input.lower()
+    sources = sources_cache.get(inter.author.name)
+    return [source for source in sources if text in source.lower()]
+
+
 class SlashesCommands(commands.Cog):
     @commands.slash_command()
     async def ping(self, inter: SlashInteraction):
@@ -198,7 +207,10 @@ class SlashesCommands(commands.Cog):
 
 
     @commands.slash_command()
-    async def list(self, inter: SlashInteraction, source: str = None):
+    async def list(
+        self, inter: SlashInteraction,
+        source: str = commands.Param(default=None, autocomplete=autocomp_sources)
+    ):
         """
         List recently added words
 
@@ -301,7 +313,10 @@ class SlashesCommands(commands.Cog):
 
 
     @commands.slash_command()
-    async def study(self, inter: SlashInteraction, source: str = None):
+    async def study(
+        self, inter: SlashInteraction,
+        source: str = commands.Param(default=None, autocomplete=autocomp_sources)
+    ):
         """
         Show synonyms and meanings of a word.
 

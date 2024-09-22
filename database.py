@@ -109,8 +109,6 @@ def fetch_word(username: str, word: str):
     res = cursor.fetchone()
     if res is None: return None
 
-    res = dict(res)
-
     return Word.from_dict(res)
 
 
@@ -169,3 +167,11 @@ def list_words(username: str, source: str = None):
         """, (source,))
 
     return [Word.from_dict(res) for res in cursor.fetchall()]
+
+
+@make_sure_table_exist
+def list_sources(username: str):
+    cursor = conn.execute(f"""
+        SELECT DISTINCT source FROM "{username}"
+    """)
+    return [res['source'] for res in cursor.fetchall()]
