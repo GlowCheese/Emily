@@ -121,6 +121,7 @@ class SlashesCommands(commands.Cog):
                     view=None,
                     embeds=[embed, make_word_card(username, word)]
                 )
+                view.stop()
 
             async def yes_callback(new_inter: disnake.MessageInteraction):
                 await new_inter.response.defer()
