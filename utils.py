@@ -100,3 +100,14 @@ class LazyDict:
                 self.lazy_time
             )
         return self.value[key].get()
+    
+
+def button_respect_to_interaction(inter: disnake.Interaction):
+    def disnake_button_decorator(fun):
+        @functools.wraps(fun)
+        async def f(new_inter: disnake.MessageInteraction, *args, **kwargs):
+            await new_inter.response.defer()
+            if new_inter.author.id == inter.author.id:
+                return fun(new_inter, *args, **kwargs)
+        return f
+    return disnake_button_decorator

@@ -123,17 +123,17 @@ class SlashesCommands(commands.Cog):
                 )
                 view.stop()
 
+            @button_respect_to_interaction(inter)
             async def yes_callback(new_inter: disnake.MessageInteraction):
-                await new_inter.response.defer()
                 w.thumbnail = mixed[current-1]
                 await finish()
 
+            @button_respect_to_interaction(inter)
             async def skip_callback(new_inter: disnake.MessageInteraction):
-                await new_inter.response.defer()
                 await finish()
 
+            @button_respect_to_interaction(inter)
             async def prev_callback(new_inter: disnake.MessageInteraction):
-                await new_inter.response.defer()
                 nonlocal current
                 current -= 1
                 next.disabled = False
@@ -150,8 +150,8 @@ class SlashesCommands(commands.Cog):
                     embed=embed.set_image(mixed[current-1])
                 )
 
+            @button_respect_to_interaction(inter)
             async def next_callback(new_inter: disnake.MessageInteraction):
-                await new_inter.response.defer()
                 nonlocal current
                 current += 1
                 prev.disabled = False
@@ -352,11 +352,9 @@ class SlashesCommands(commands.Cog):
         view = disnake.ui.View()
 
         current = 1
-        async def button_callback(
-            new_inter: disnake.MessageInteraction
-        ):
+        @button_respect_to_interaction(inter)
+        async def button_callback(new_inter: disnake.MessageInteraction):
             nonlocal current
-            await new_inter.response.defer()
 
             current += 1
             next_button.label = f"Next ({current}/{total})"
