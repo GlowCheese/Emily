@@ -23,7 +23,8 @@ def make_word_card(username: str, word: str):
     if len(w.synonyms) > 0:
         synonyms = ", ".join(w.synonyms)
         embed.add_field("Synonyms", synonyms)
-    embed.add_field("Meanings", meanings, inline=False)
+    if meanings != "":
+        embed.add_field("Meanings", meanings, inline=False)
 
     if w.thumbnail is not None:
         embed.set_thumbnail(w.thumbnail)
@@ -32,6 +33,8 @@ def make_word_card(username: str, word: str):
 
 
 def get_google_images(query: str, num: int = 5):
+    if query == "": return []
+
     url = f"https://www.googleapis.com/customsearch/v1"
     params = {
         "q": query,  # Search query

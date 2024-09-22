@@ -22,8 +22,8 @@ class Word:
     ):
         self.word = word
         self.source = source
-        self.meanings = meanings.split(";")
         self.synonyms = synonyms.split(";") if synonyms else []
+        self.meanings = meanings.split(";") if meanings != "" else []
         self.time_added = time_added if time_added else int(time.time())
         self.thumbnail = thumbnail
 
@@ -73,7 +73,7 @@ def add_word(username: str, word: Word):
             INSERT INTO "{username}"
             VALUES (?, ?, ?, ?, ?, ?)
         """, (
-            word.word, word.source, word.meanings[0],
+            word.word, word.source, ";".join(word.meanings),
             None, word.time_added, word.thumbnail
         ))
 

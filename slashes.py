@@ -61,7 +61,7 @@ class SlashesCommands(commands.Cog):
 
 
     @add.sub_command()
-    async def word(self, inter: SlashInteraction, word: str, source: str, meaning: str):
+    async def word(self, inter: SlashInteraction, word: str, source: str, meaning: str = ""):
         """
         Add a new word to dictionary
 
@@ -83,14 +83,16 @@ class SlashesCommands(commands.Cog):
         else:
             imgs1 = get_google_images(word)
             imgs2 = get_google_images(meaning)
-            interleaved = [item for pair in zip(imgs1, imgs2) for item in pair]
+
+            mixed = imgs1 + imgs2
+            random.shuffle(mixed)
 
             embed = disnake.Embed(
                 description="Does this image best describe your word?",
                 color=random.choice(COLORS),
             )
-            embed.set_footer(text="Image 1/10")
-            await inter.send(embed=embed.set_image(interleaved[0]))
+            embed.set_footer(text=f"Image 1/{len(mixed)}")
+            await inter.send(embed=embed.set_image(mixed[0]))
 
             current = 1
             yes = disnake.ui.Button(
@@ -122,7 +124,7 @@ class SlashesCommands(commands.Cog):
 
             async def yes_callback(new_inter: disnake.MessageInteraction):
                 await new_inter.response.defer()
-                w.thumbnail = interleaved[current-1]
+                w.thumbnail = mixed[current-1]
                 await finish()
 
             async def skip_callback(new_inter: disnake.MessageInteraction):
@@ -141,10 +143,10 @@ class SlashesCommands(commands.Cog):
                     view.add_item(prev).add_item(next)
                     view.add_item(skip)
 
-                embed.set_footer(text=f"Image {current}/10")
+                embed.set_footer(text=f"Image {current}/{len(mixed)}")
                 await inter.edit_original_response(
                     view=view,
-                    embed=embed.set_image(interleaved[current-1])
+                    embed=embed.set_image(mixed[current-1])
                 )
 
             async def next_callback(new_inter: disnake.MessageInteraction):
@@ -153,16 +155,16 @@ class SlashesCommands(commands.Cog):
                 current += 1
                 prev.disabled = False
                 
-                if current == len(interleaved):
+                if current == len(mixed):
                     next.disabled = True
                     view.clear_items().add_item(yes)
                     view.add_item(prev).add_item(next)
                     view.add_item(skip)
 
-                embed.set_footer(text=f"Image {current}/10")
+                embed.set_footer(text=f"Image {current}/{len(mixed)}")
                 await inter.edit_original_response(
                     view=view,
-                    embed=embed.set_image(interleaved[current-1])
+                    embed=embed.set_image(mixed[current-1])
                 )
 
             async def on_timeout():
@@ -260,7 +262,10 @@ class SlashesCommands(commands.Cog):
         await inter.response.defer()
         username = inter.author.name
 
-        if database.add_meaning(username, word, meaning):
+        if meaning.count(';') > 0:
+            desc = "⭕ `meaning` cannot contains any `;` character!"
+            await inter.send(embed=disnake.Embed(description=desc, color=ALERT))
+        elif database.add_meaning(username, word, meaning):
             desc = f"✅ Successfully added `1` new meaning for word `{word}`!"
             embed = disnake.Embed(description=desc, color=SUCCESS)
             await inter.send(embeds=[embed, make_word_card(username, word)])
@@ -283,7 +288,10 @@ class SlashesCommands(commands.Cog):
         await inter.response.defer()
         username = inter.author.name
 
-        if database.add_synonym(username, word, synonym):
+        if synonym.count(';') > 0:
+            desc = "⭕ `synonym` cannot contains any `;` character!"
+            await inter.send(embed=disnake.Embed(description=desc, color=ALERT))
+        elif database.add_synonym(username, word, synonym):
             desc = f"✅ Successfully added `1` new synonym for word `{word}`!"
             embed = disnake.Embed(description=desc, color=SUCCESS)
             await inter.send(embeds=[embed, make_word_card(username, word)])
